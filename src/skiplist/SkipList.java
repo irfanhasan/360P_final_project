@@ -11,9 +11,17 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SkipList<E extends Comparable<E>> {
 	private SkipListNode<E> head;
 	private int size;
+	private static final int MAX_HEIGHT = 32;
 	
 	public SkipList() {
 		head = new SkipListNode<E>(null);
+		SkipListNode<E> current = head;
+		for (int i = 0; i < MAX_HEIGHT-1; i++) {
+			SkipListNode<E> next = new SkipListNode<E>(null);
+			current.down = next;
+			next.up = current;
+			current = next;
+		}
 		size = 0;
 	}
 	
@@ -38,7 +46,7 @@ public class SkipList<E extends Comparable<E>> {
 	}
 	
 	public boolean add(E value) {
-		//if (contains(value)) { return false; }
+		if (contains(value)) { return false; }
 		SkipListNode<E> current = head;
 		// Find node before insertion
 		while (current != null) {
@@ -63,8 +71,7 @@ public class SkipList<E extends Comparable<E>> {
 				break; 
 			}
 		}
-		count = 1;
-		System.out.println(count);
+		if (count > MAX_HEIGHT) { count = MAX_HEIGHT; }
 		
 		ArrayList<SkipListNode<E>> addedNodes = new ArrayList<SkipListNode<E>>();
 		for (int i = 0; i < count; i++) {
@@ -85,18 +92,11 @@ public class SkipList<E extends Comparable<E>> {
 			}
 			
 			addedNodes.add(newNode);
-			/*
 			while (current.up == null) {
-				if (current.left == null) {
-					current.up = new SkipListNode<E>(null);
-					current.up.down = current;
-					head = current.up;
-					break;
-				}
 				current = current.left;
 			}
 			current = current.up;
-			*/
+			
 		}
 		size++;
 		return true;
@@ -142,16 +142,20 @@ public class SkipList<E extends Comparable<E>> {
 	
 	public void printList() {
 		SkipListNode<E> currentHead = head;
-		SkipListNode<E> nodeToPrint = currentHead.right;
 		
+		int level = 31;
 		while(currentHead != null) {
-			System.out.print("* ");
+			System.out.print("[" + level + "]" + " * ");
+			
+			SkipListNode<E> nodeToPrint = currentHead.right;
 			while(nodeToPrint != null) {
 				System.out.print(nodeToPrint.getValue() + " ");
 				nodeToPrint = nodeToPrint.right;
 			}
+			
 			System.out.print("\n");
 			currentHead = currentHead.down;
+			level--;
 		}
 	}
 	
