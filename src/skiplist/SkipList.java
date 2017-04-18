@@ -27,7 +27,7 @@ public class SkipList<E extends Comparable<E>> {
 				return current;
 			}
 			
-			if (current.right == null || greaterThan(current.right.getValue(), current.getValue())) {
+			if (current.right == null || greaterThan(current.right.getValue(), value)) {
 				current = current.down;
 			} else {
 				current = current.right;
@@ -38,7 +38,7 @@ public class SkipList<E extends Comparable<E>> {
 	}
 	
 	public boolean add(E value) {
-		if (contains(value)) { return false; }
+		//if (contains(value)) { return false; }
 		SkipListNode<E> current = head;
 		// Find node before insertion
 		while (current != null) {
@@ -46,7 +46,7 @@ public class SkipList<E extends Comparable<E>> {
 				break;
 			}
 			
-			if (current.right == null || greaterThan(current.right.getValue(), current.getValue())) {
+			if (current.right == null || greaterThan(current.right.getValue(), value)) {
 				current = current.down;
 			} else {
 				current = current.right;
@@ -63,6 +63,8 @@ public class SkipList<E extends Comparable<E>> {
 				break; 
 			}
 		}
+		count = 1;
+		System.out.println(count);
 		
 		ArrayList<SkipListNode<E>> addedNodes = new ArrayList<SkipListNode<E>>();
 		for (int i = 0; i < count; i++) {
@@ -83,7 +85,7 @@ public class SkipList<E extends Comparable<E>> {
 			}
 			
 			addedNodes.add(newNode);
-			
+			/*
 			while (current.up == null) {
 				if (current.left == null) {
 					current.up = new SkipListNode<E>(null);
@@ -94,6 +96,7 @@ public class SkipList<E extends Comparable<E>> {
 				current = current.left;
 			}
 			current = current.up;
+			*/
 		}
 		size++;
 		return true;
@@ -137,20 +140,40 @@ public class SkipList<E extends Comparable<E>> {
 		return size;
 	}
 	
+	public void printList() {
+		SkipListNode<E> currentHead = head;
+		SkipListNode<E> nodeToPrint = currentHead.right;
+		
+		while(currentHead != null) {
+			System.out.print("* ");
+			while(nodeToPrint != null) {
+				System.out.print(nodeToPrint.getValue() + " ");
+				nodeToPrint = nodeToPrint.right;
+			}
+			System.out.print("\n");
+			currentHead = currentHead.down;
+		}
+	}
+	
 	
 	/******************************************************************************
 	* Utility Functions                                                           *
 	******************************************************************************/
 
 	private boolean lessThan(E a, E b) {
+		if (a == null) { return true; }
+		if (b == null) { return false; }
 		return a.compareTo(b) < 0;
 	}
 
 	private boolean equalTo(E a, E b) {
+		if (a == null || b == null) { return false; }
 		return a.compareTo(b) == 0;
 	}
 
 	private boolean greaterThan(E a, E b) {
+		if (a == null) { return false; }
+		if (b == null) { return true; }
 		return a.compareTo(b) > 0;
 	}
 
