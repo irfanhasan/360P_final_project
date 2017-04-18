@@ -65,7 +65,7 @@ public class SkipList<E> {
 		for (int i = 0; i < count; i++) {
 			// Insert in row (modify right and left nodes)
 			next = current.right;
-			newNode = SkipListNode<E>(value);
+			newNode = new SkipListNode<E>(value);
 			newNode.left = current;
 			newNode.right = next;
 			current.right = newNode;
@@ -82,10 +82,13 @@ public class SkipList<E> {
 			addedNodes.add(newNode);
 			
 			while (current.up == null) {
+				if (current.left == null) {
+					current.up = new SkipListNode<E>(null);
+					break;
+				}
 				current = current.left;
 			}
-			current = current.up;
-			
+			current = current.up;	
 		}
 		
 		return true;
