@@ -8,7 +8,7 @@
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class SkipList<E> {
+public class SkipList<E extends Comparable<E>> {
 	private SkipListNode<E> head;
 	private int size;
 	
@@ -27,7 +27,7 @@ public class SkipList<E> {
 				return current;
 			}
 			
-			if (current.right == null || current.right.getValue() > current.getValue()) {
+			if (current.right == null || greaterThan(current.right.getValue(), current.getValue())) {
 				current = current.down;
 			} else {
 				current = current.right;
@@ -42,11 +42,11 @@ public class SkipList<E> {
 		SkipListNode<E> current = head;
 		// Find node before insertion
 		while (current != null) {
-			if ((current.getValue() == null || current.getValue() < value) && (current.right == null || current.right.getValue() > value) && current.down == null) {
-				return current;
+			if ((current.getValue() == null || lessThan(current.getValue(), value)) && (current.right == null || greaterThan(current.right.getValue(), value)) && current.down == null) {
+				break;
 			}
 			
-			if (current.right == null || current.right.getValue() > current.getValue()) {
+			if (current.right == null || greaterThan(current.right.getValue(), current.getValue())) {
 				current = current.down;
 			} else {
 				current = current.right;
@@ -67,8 +67,8 @@ public class SkipList<E> {
 		ArrayList<SkipListNode<E>> addedNodes = new ArrayList<SkipListNode<E>>();
 		for (int i = 0; i < count; i++) {
 			// Insert in row (modify right and left nodes)
-			next = current.right;
-			newNode = new SkipListNode<E>(value);
+			SkipListNode<E> next = current.right;
+			SkipListNode<E> newNode = new SkipListNode<E>(value);
 			newNode.left = current;
 			newNode.right = next;
 			current.right = newNode;
@@ -87,11 +87,13 @@ public class SkipList<E> {
 			while (current.up == null) {
 				if (current.left == null) {
 					current.up = new SkipListNode<E>(null);
+					current.up.down = current;
+					head = current.up;
 					break;
 				}
 				current = current.left;
 			}
-			current = current.up;	
+			current = current.up;
 		}
 		size++;
 		return true;
@@ -133,6 +135,23 @@ public class SkipList<E> {
 	
 	public int size() {
 		return size;
+	}
+	
+	
+	/******************************************************************************
+	* Utility Functions                                                           *
+	******************************************************************************/
+
+	private boolean lessThan(E a, E b) {
+		return a.compareTo(b) < 0;
+	}
+
+	private boolean equalTo(E a, E b) {
+		return a.compareTo(b) == 0;
+	}
+
+	private boolean greaterThan(E a, E b) {
+		return a.compareTo(b) > 0;
 	}
 
 }
