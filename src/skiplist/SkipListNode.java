@@ -21,7 +21,6 @@ public class SkipListNode<E> {
 		up = null;
 		down = null;
 	}
-	
 		
 	public E getValue() {
 		return value;
