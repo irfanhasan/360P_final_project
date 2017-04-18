@@ -21,6 +21,9 @@ public class SkipList<E> {
 		SkipListNode<E> current = head;
 		while (current != null) {
 			if (current.getValue() == value) {
+				while (current.down != null) {
+					current = current.down;
+				}
 				return current;
 			}
 			
@@ -90,12 +93,28 @@ public class SkipList<E> {
 			}
 			current = current.up;	
 		}
-		
+		size++;
 		return true;
 	}
 	
 	public boolean remove(E value) {
+		SkipListNode<E> toBeDeleted = find(value);
+		if (toBeDeleted == null || value == null) { return false; }
 		
+		do {
+			SkipListNode<E> prev = toBeDeleted.left;
+			SkipListNode<E> next = toBeDeleted.right;
+			if (prev != null) {
+				prev.right = next;
+			}
+			if (next != null) {
+				next.left = prev;
+			}
+			toBeDeleted = toBeDeleted.up;
+		} while (toBeDeleted != null);
+		
+		size--;
+		return true;
 	}
 	
 	public boolean contains(E value) {
