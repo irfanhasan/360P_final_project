@@ -79,23 +79,23 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         return lFound;
     }
 
-	/******************************************************************************
-	* Utility Functions                                                           *
-	******************************************************************************/
+    /******************************************************************************
+    * Utility Functions                                                           *
+    ******************************************************************************/
 
-	private boolean lessThan(E a, E b) {
-		return a.compareTo(b) < 0;
-	}
+    private boolean lessThan(E a, E b) {
+        return a.compareTo(b) < 0;
+    }
 
-	private boolean equalTo(E a, E b) {
-		if (a == null || b == null) { return false; }
-		return a.compareTo(b) == 0;
-	}
+    private boolean equalTo(E a, E b) {
+        if (a == null || b == null) { return false; }
+        return a.compareTo(b) == 0;
+    }
 
-	private boolean greaterThan(E a, E b) {
-		if (a == null) { return false; }
-		if (b == null) { return true; }
-		return a.compareTo(b) > 0;
-	}
+    private boolean greaterThan(E a, E b) {
+        if (a == null) { return false; }
+        if (b == null) { return true; }
+        return a.compareTo(b) > 0;
+    }
 
 }
