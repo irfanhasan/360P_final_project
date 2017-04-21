@@ -12,12 +12,13 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
      */
     private static final int MaxHeight = 32;
     
-    Node<T> head; 
+    Node head; 
+    
 
-    private class Node<T> {
+    private class Node {
         T value;
         Semaphore lock;
-        ArrayList<Node<T>> nexts;
+        ArrayList<Node> nexts;
         boolean marked;
         boolean fullyLinked;
         int topLevel;
@@ -25,7 +26,8 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         Node(T val, int topLevel) {
             value = val;
             lock = new Semaphore(1);
-            nexts = new ArrayList<Node<T>>(MaxHeight);
+            nexts = new ArrayList<Node>(MaxHeight);
+            initArrayList(nexts);
             marked = false;
             fullyLinked = false;
             this.topLevel = topLevel;
@@ -36,6 +38,12 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
                 lock.acquire();
             } catch (InterruptedException e) {}
         }
+        
+        void initArrayList(ArrayList<Node> list) {
+            for (int i = 0; i < MaxHeight; i++) {
+                list.add(null);
+            }
+        }
     }
 
     /**
@@ -43,8 +51,8 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
      */
     
     public FineGrainedSkipList() {
-        head = new Node<T>(null, MaxHeight);
-        Node<T> tail = new Node<T>(null, MaxHeight);
+        head = new Node(null, MaxHeight);
+        Node tail = new Node(null, MaxHeight);
         for (int i = 0; i < MaxHeight; i++) {
             head.nexts.set(i, tail);
         }
@@ -52,12 +60,14 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
 
     public boolean add(T val) {
     	int topLayer = randomLevel(MaxHeight);
-    	ArrayList<Node<T>> preds = new ArrayList<Node<T>>(MaxHeight);
-    	ArrayList<Node<T>> succs = new ArrayList<Node<T>>(MaxHeight);
+    	ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
+    	ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
+        initArrayList(preds);
+        initArrayList(succs);
     	while(true){
     		int lFound = findNode(val, preds, succs);
     		if(lFound!=-1){
-    			Node<T> nodeFound = succs.get(lFound);
+    			Node nodeFound = succs.get(lFound);
     			if(!nodeFound.marked){
     				while(!nodeFound.fullyLinked);
     				return false;
@@ -66,7 +76,7 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     		}
     		int highestLocked = -1;
     		try{
-    			Node<T> pred, succ, prevPred = null;
+    			Node pred, succ, prevPred = null;
     			boolean valid = true;
     			for(int layer=0; valid && (layer<=topLayer); layer++){
     				pred = preds.get(layer);
@@ -80,7 +90,7 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     			}
     			if(!valid) continue;
     			
-    			Node<T> newNode = new Node(val, topLayer);
+    			Node newNode = new Node(val, topLayer);
     			for(int layer=0; layer<=topLayer; layer++){
     				newNode.nexts.set(layer, succs.get(layer));
     				preds.get(layer).nexts.set(layer, newNode);
@@ -95,11 +105,13 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     }
     
     public boolean remove(T val) {
-       Node<T> nodeToDelete = null;
+       Node nodeToDelete = null;
        boolean isMarked = false;
        int topLevel = -1;
-       ArrayList<Node<T>> preds = new ArrayList<Node<T>>(MaxHeight);
-       ArrayList<Node<T>> succs = new ArrayList<Node<T>>(MaxHeight);
+       ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
+       ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
+       initArrayList(preds);
+       initArrayList(succs);
        while(true) {
            int found = findNode(val, preds, succs);
            if (isMarked || (found != -1 && okToDelete(succs.get(found), found))) {
@@ -117,7 +129,7 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
                }
                int maxLocked = -1;
                try {
-                   Node<T> succ, pred, prevPred = null;
+                   Node succ, pred, prevPred = null;
                    boolean valid = true;
                    for (int i = 0; valid && i <= topLevel; i++) {
                        pred = preds.get(i);
@@ -145,8 +157,10 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     }
 
     public boolean contains(T val) {
-    	ArrayList<Node<T>> preds = new ArrayList<Node<T>>(MaxHeight);
-    	ArrayList<Node<T>> succs = new ArrayList<Node<T>>(MaxHeight);    	
+    	ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
+    	ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
+        initArrayList(preds);
+        initArrayList(succs);
     	int lFound = findNode(val, preds, succs);
     	return	(lFound!=-1) 
     			&& (succs.get(lFound).fullyLinked) 
@@ -167,11 +181,11 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     /**
      * @return the highest layer at which value exists or -1 if value doesn't exist
      */
-    private int findNode(T val, ArrayList<Node<T>> preds, ArrayList<Node<T>> succs) {
+    private int findNode(T val, ArrayList<Node> preds, ArrayList<Node> succs) {
         int lFound = - 1;
-        Node<T> pred = head;
+        Node pred = head;
         for (int level = MaxHeight - 1; level >= 0; level--) {
-            Node<T> curr = pred.nexts.get(level);
+            Node curr = pred.nexts.get(level);
             
             while (curr.value != null && greaterThan(val, curr.value)) {
                 pred = curr; curr = pred.nexts.get(level);
@@ -190,11 +204,11 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     /**
      *@return whether the node at the level it was found can be deleted
      */
-    private boolean okToDelete(Node<T> node, int level) {
+    private boolean okToDelete(Node node, int level) {
         return node.fullyLinked && !node.marked && node.topLevel == level;
     }
 
-    private void unlock(ArrayList<Node<T>> nodes, int maxLevel) {
+    private void unlock(ArrayList<Node> nodes, int maxLevel) {
         for (int i = maxLevel; i >= 0; i--) {
             nodes.get(i).lock.release();
         }
@@ -222,6 +236,12 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         if (a == null) { return false; }
         if (b == null) { return true; }
         return a.compareTo(b) > 0;
+    }
+
+    protected void initArrayList(ArrayList<Node> list) {
+        for (int i = 0; i < MaxHeight; i++) {
+            list.add(null);
+        }
     }
 
 }
