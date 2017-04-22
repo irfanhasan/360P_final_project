@@ -30,8 +30,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         Node(T val, int topLevel) {
             value = val;
             lock = new Semaphore(1);
-            //nexts = new ArrayList<Node>(MaxHeight);
-            //nexts.addAll(Collections.nCopies(MaxHeight, null));
             nexts = new NodeArray(MaxHeight);
             marked = false;
             fullyLinked = false;
@@ -75,9 +73,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
 
     public boolean add(T val) {
         int topLayer = randomLevel(MaxHeight);
-        //ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
-        //ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
-        //preds.addAll(Collections.nCopies(MaxHeight, null)); succs.addAll(Collections.nCopies(MaxHeight, null));
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
         while(true){
@@ -124,9 +119,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
        Node nodeToDelete = null;
        boolean isMarked = false;
        int topLevel = -1;
-       //ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
-       //ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
-       //preds.addAll(Collections.nCopies(MaxHeight, null)); succs.addAll(Collections.nCopies(MaxHeight, null)); 
        NodeArray preds = new NodeArray(MaxHeight);
        NodeArray succs = new NodeArray(MaxHeight);
        while(true) {
@@ -174,9 +166,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     }
 
     public boolean contains(T val) {
-        //ArrayList<Node> preds = new ArrayList<Node>(MaxHeight);
-        //ArrayList<Node> succs = new ArrayList<Node>(MaxHeight);
-        //preds.addAll(Collections.nCopies(MaxHeight, null)); succs.addAll(Collections.nCopies(MaxHeight, null));
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
         int lFound = findNode(val, preds, succs);
