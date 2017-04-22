@@ -6,7 +6,6 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     private static final int MaxHeight = 32;
     
    Node head; 
-    
 
     private class Node {
         T value;
@@ -39,8 +38,9 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             arr[i] = node;
         }
         
-        boolean compareAndSet(int i, Node node) {
-        	
+        boolean compareAndSet(int i, Node expected, Node node) {
+        	AtomicReference<Node> atomicNode = new AtomicReference<Node>(arr[i]);
+        	return atomicNode.compareAndSet(expected, node);
         }
     }
 
@@ -78,32 +78,22 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     }
                     isMarked = true;
                 }
-                
-                //TODO: Lock-Free deletion of whole list 
-                //int maxLocked = -1;
-                //try {
-                Node succ, pred, prevPred = null;
+
+                Node succ, pred = null;
                 boolean valid = true;
                 for (int i = 0; valid && i <= topLevel; i++) {
                     pred = preds.get(i);
                     succ = succs.get(i);
-                    //if (pred != prevPred) {
-                        //pred.acquireLock();
-                        //maxLocked = i;
-                        //prevPred = pred;
-                    //
+                    
+                    while(!preds.get(i).nexts.compareAndSet(i, succ, nodeToDelete.nexts.get(i))) {
                     }
-                    //need to check that predecessor and successor are still valid elements
-                    valid = !pred.marked && pred.nexts.get(i).equals(succ); 
+                    
+                    if(pred.marked.get()) {  //Comes after, so if valid after the CAS, we are good
+                    	valid = false;
+                    }
                 }
-                if (!valid) continue; //retry deletion
-
-                for (int i = topLevel; i >= 0; i--) {
-                    preds.get(i).nexts.set(i, nodeToDelete.nexts.get(i));
-                }
-                //nodeToDelete.lock.release();
+                if (!valid) continue; //Is there a more efficient continue check?
                 return true;
-                //} finally { unlock(preds, maxLocked); }
             } else {
                 return false;
             } //end if
@@ -157,7 +147,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
      *@return whether the node at the level it was found can be deleted
      */
     private boolean okToDelete(Node node, int level) {
-        return node.fullyLinked && !node.marked && node.topLevel == level;
+        return node.fullyLinked && !node.marked.get() && node.topLevel == level;
     }
 
     
