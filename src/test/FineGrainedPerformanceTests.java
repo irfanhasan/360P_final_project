@@ -21,7 +21,7 @@ public class FineGrainedPerformanceTests {
 
     //MAIN
     public static void main(String[] args) {
-        FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(100);
+        FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(1000);
         System.out.println("Our function add on avg: " + test.testSkipListAdd(false) + " ns");
         System.out.println("Java function add on avg: " + test.testSkipListAdd(true) + " ns");
     }
