@@ -57,7 +57,41 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     }
 
     public boolean add(T val) {
-        return false;
+        int topLayer = randomLevel(MaxHeight);
+        NodeArray preds = new NodeArray(MaxHeight);
+        NodeArray succs = new NodeArray(MaxHeight);
+        while(true){
+            int lFound = findNode(val, preds, succs);
+            if(lFound!=-1){
+                Node nodeFound = succs.get(lFound);
+                if(!nodeFound.marked){
+                    while(!nodeFound.fullyLinked);
+                    return false;
+                }
+                continue;
+            }
+            
+            Node pred, succ, prevPred = null;
+            boolean valid = true;
+            Node newNode = new Node(val, topLayer);
+            for(int layer=0; valid && (layer<=topLayer); layer++){
+                pred = preds.get(layer);
+                succ = succs.get(layer);
+                
+                newNode.nexts.set(layer, succ); // Don't need CAS cause newNode was created by us
+                while(!preds.get(layer).nexts.compareAndSet(layer, succ, newNode)) {
+                }
+                
+                //if(pred.marked.get()) { 
+                //    valid = false;
+                //}
+            }
+            //if(!valid) continue;
+            
+            newNode.fullyLinked = true;
+            break;
+        }
+        return true;
     }
     
     public boolean remove(T val) {
@@ -88,16 +122,17 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     while(!preds.get(i).nexts.compareAndSet(i, succ, nodeToDelete.nexts.get(i))) {
                     }
                     
-                    if(pred.marked.get()) {  //Comes after, so if valid after the CAS, we are good
-                    	valid = false;
-                    }
+                    // I DONT THINK WE NEED THIS - GUNALAN
+                    // if(pred.marked.get()) {  //Comes after, so if valid after the CAS, we are good
+                    // 	valid = false;
+                    // }
                 }
-                if (!valid) continue; //Is there a more efficient continue check?
+                // if (!valid) continue; //Is there a more efficient continue check?
                 return true;
             } else {
                 return false;
-            } //end if
-        } //end while
+            }
+        }
     }
     
     public boolean contains(T val) {
