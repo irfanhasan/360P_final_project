@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.LinkedList;
 
 import java.util.Random;
+import java.util.Scanner;
 
 public class FineGrainedPerformanceTests {
     private static final int NUM_THREADS = 20;
@@ -21,9 +22,31 @@ public class FineGrainedPerformanceTests {
 
     //MAIN
     public static void main(String[] args) {
-        FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(1000);
-        System.out.println("Our function add on avg: " + test.testSkipListAdd(false) + " ns");
-        System.out.println("Java function add on avg: " + test.testSkipListAdd(true) + " ns");
+    	System.out.println("Welcome");
+    	System.out.println("Enter 'a'/'A' for Add test, 'c'/'C' for contain test, and 'r'/'R' for Remove Test:");
+    	
+    	Scanner sc = new Scanner(System.in);
+    	String str = sc.next().toLowerCase();
+    	
+    	FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(1000);
+    	if(str.equals("a")){
+    		System.out.println("=======================");
+    		System.out.println("Our function add on avg: " + test.testSkipListAdd(false) + " ns");
+            System.out.println("Java function add on avg: " + test.testSkipListAdd(true) + " ns");
+            System.out.println("=======================");
+    	}else if(str.equals("c")){
+    		System.out.println("=======================");
+    		System.out.println("Our function contains on avg: " + test.testSkipListContains(false) + " ns");
+            System.out.println("Java function contains on avg: " + test.testSkipListContains(true) + " ns");
+            System.out.println("=======================");
+    	}else if(str.equals("r")){
+    		System.out.println("=======================");
+    		System.out.println("Our function remove on avg: " + test.testSkipListRemove(false) + " ns");
+            System.out.println("Java function remove on avg: " + test.testSkipListRemove(true) + " ns");
+            System.out.println("=======================");
+    	}else{
+    		System.out.println("Invalid Input, System exiting.");
+    	}
     }
 
 
@@ -62,6 +85,60 @@ public class FineGrainedPerformanceTests {
         }
         es.shutdown();
         return sum/ (long) values.length;
+    }
+    
+    public long testSkipListRemove(boolean useJava){
+    	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
+    	FineGrainedSkipList<Integer> list = new FineGrainedSkipList<Integer>();
+    	for(int v : values){
+    		map.put(v, "");
+    		list.add(v);
+    	}
+    	ExecutorService es = Executors.newCachedThreadPool();
+    	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
+    	for(int i=0; i<NUM_THREADS; i++){
+    		if(useJava){
+    			futures.add(es.submit(new SkipListRemoveTimer(map, null, i+1)));
+    		}else{
+    			futures.add(es.submit(new SkipListRemoveTimer(null, list, i+1)));
+    		}
+    	}
+    	
+    	long sum=0;
+    	for(Future<Long[]> future : futures){
+    		try{
+    			sum += sum(future.get());
+    		}catch(InterruptedException | ExecutionException e){}
+    	}
+    	es.shutdown();
+    	return sum/(long) values.length;
+    }
+    
+    public long testSkipListContains(boolean useJava){
+    	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
+    	FineGrainedSkipList<Integer> list = new FineGrainedSkipList<Integer>();
+    	for(int v : values){
+    		map.put(v, "");
+    		list.add(v);
+    	}
+    	ExecutorService es = Executors.newCachedThreadPool();
+    	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
+    	for(int i=0; i<NUM_THREADS; i++){
+    		if(useJava){
+    			futures.add(es.submit(new SkipListContainsTimer(map, null, i+1)));
+    		}else{
+    			futures.add(es.submit(new SkipListContainsTimer(null, list, i+1)));
+    		}
+    	}
+    	
+    	long sum=0;
+    	for(Future<Long[]> future : futures){
+    		try{
+    			sum += sum(future.get());
+    		}catch(InterruptedException | ExecutionException e){}
+    	}
+    	es.shutdown();
+    	return sum/(long) values.length;
     }
 
     /**
@@ -108,19 +185,83 @@ public class FineGrainedPerformanceTests {
 
         public Long[] call() { 
             Long[] results = new Long[end - start + 1];
-            int index = 0;
+            int index = 0; 
+            long mstart, mend;
             for (int i = start; i <= end; i++) {
-                long start = System.nanoTime();
-                if(javaSkipList != null) { 
+                if(javaSkipList != null) {
+                	mstart = System.nanoTime();
                     javaSkipList.put(values[i], "");
+                    mend = System.nanoTime();
                 } else {
+                	mstart = System.nanoTime();
                     ourSkipList.add(values[i]);
+                    mend = System.nanoTime();
                 }
-                long end = System.nanoTime();
-                results[index++] = end - start;
+                results[index++] = mend - mstart;
             }
             return results;
         }
-
     }
+    
+    class SkipListContainsTimer implements Callable<Long[]>{
+    	ConcurrentSkipListMap<Integer, String> javaSkipList;
+    	FineGrainedSkipList<Integer> ourSkipList;
+    	
+    	int multiplier;
+    	
+    	SkipListContainsTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int m){
+    		javaSkipList = list1;
+    		ourSkipList = list2;
+    		multiplier = m;
+    	}
+    
+		public Long[] call() throws Exception {
+			Long[] results = new Long[values.length];
+			long start, end;
+			for(int i=0; i<values.length; i++){
+				if(javaSkipList!=null){
+					start = System.nanoTime();
+					javaSkipList.containsValue(i*multiplier);
+					end = System.nanoTime();
+				}else{
+					start = System.nanoTime();
+					ourSkipList.contains(i*multiplier);
+					end = System.nanoTime();
+				}
+				results[i] = end-start;
+			}
+			return results;
+		}
+	}
+    
+    class SkipListRemoveTimer implements Callable<Long[]>{
+    	ConcurrentSkipListMap<Integer, String> javaSkipList;
+    	FineGrainedSkipList<Integer> ourSkipList;
+    	
+    	int multiplier;
+    	
+    	SkipListRemoveTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int m){
+    		javaSkipList = list1;
+    		ourSkipList = list2;
+    		multiplier = m;
+    	}
+    
+		public Long[] call() throws Exception {
+			Long[] results = new Long[values.length];
+			long start, end;
+			for(int i=0; i<values.length; i++){
+				if(javaSkipList!=null){
+					start = System.nanoTime();
+					javaSkipList.remove(i*multiplier);
+					end = System.nanoTime();
+				}else{
+					start = System.nanoTime();
+					ourSkipList.remove(i*multiplier);
+					end = System.nanoTime();
+				}
+				results[i] = end-start;
+			}
+			return results;
+		}
+	}
 }
