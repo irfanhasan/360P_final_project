@@ -64,7 +64,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             int lFound = findNode(val, preds, succs);
             if(lFound!=-1){
                 Node nodeFound = succs.get(lFound);
-                if(!nodeFound.marked){
+                if(!nodeFound.marked.get()){
                     while(!nodeFound.fullyLinked);
                     return false;
                 }
@@ -100,7 +100,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         int topLevel = -1;
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
-        AtomicBoolean atomicBool = new AtomicBoolean();
+        //AtomicBoolean atomicBool = new AtomicBoolean();
         while(true) {
             int found = findNode(val, preds, succs);
             if (isMarked || (found != -1 && okToDelete(succs.get(found), found))) {
