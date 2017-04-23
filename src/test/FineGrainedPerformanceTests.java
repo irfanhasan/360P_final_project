@@ -271,7 +271,7 @@ public class FineGrainedPerformanceTests {
 				} else {
 			    	if(javaSkipList!=null){
 					    mstart = System.nanoTime();
-					    javaSkipList.containsValue(values[i]);
+					    javaSkipList.containsKey(values[i]);
 					    mend = System.nanoTime();
 				    } else {
 					    mstart = System.nanoTime();
