@@ -167,7 +167,7 @@ public class FineGrainedPerformanceTests {
         return sum/ (long) values.length;
     }
     
-    public long testSkipListRemove(boolean useJava){
+    public long testSkipListContains(boolean useJava){
     	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
     	FineGrainedSkipList<Integer> list = new FineGrainedSkipList<Integer>();
     	for(int v : values){
@@ -176,13 +176,22 @@ public class FineGrainedPerformanceTests {
     	}
     	ExecutorService es = Executors.newCachedThreadPool();
     	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
-    	for(int i=0; i<NUM_THREADS; i++){
-    		if(useJava){
-    			futures.add(es.submit(new SkipListRemoveTimer(map, null, i+1)));
-    		}else{
-    			futures.add(es.submit(new SkipListRemoveTimer(null, list, i+1)));
-    		}
-    	}
+    	int start = 0;
+        int valuesPerThread = values.length/NUM_THREADS;
+        while (start < values.length) {
+            int end = start + valuesPerThread;
+            if (end > values.length - 1) {
+                end = values.length - 1;
+            }
+
+            if(useJava) {
+                futures.add(es.submit(new SkipListContainsTimer(map, null, start, end)));
+            } else {
+                futures.add(es.submit(new SkipListContainsTimer(null, list, start, end)));
+            }
+
+            start = end + 1;
+        }
     	
     	long sum=0;
     	for(Future<Long[]> future : futures){
@@ -194,7 +203,7 @@ public class FineGrainedPerformanceTests {
     	return sum/(long) values.length;
     }
     
-    public long testSkipListContains(boolean useJava){
+    public long testSkipListRemove(boolean useJava){
     	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
     	FineGrainedSkipList<Integer> list = new FineGrainedSkipList<Integer>();
     	for(int v : values){
@@ -203,13 +212,22 @@ public class FineGrainedPerformanceTests {
     	}
     	ExecutorService es = Executors.newCachedThreadPool();
     	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
-    	for(int i=0; i<NUM_THREADS; i++){
-    		if(useJava){
-    			futures.add(es.submit(new SkipListContainsTimer(map, null, i+1)));
-    		}else{
-    			futures.add(es.submit(new SkipListContainsTimer(null, list, i+1)));
-    		}
-    	}
+    	int start = 0;
+        int valuesPerThread = values.length/NUM_THREADS;
+        while (start < values.length) {
+            int end = start + valuesPerThread;
+            if (end > values.length - 1) {
+                end = values.length - 1;
+            }
+
+            if(useJava) {
+                futures.add(es.submit(new SkipListRemoveTimer(map, null, start, end)));
+            } else {
+                futures.add(es.submit(new SkipListRemoveTimer(null, list, start, end)));
+            }
+
+            start = end + 1;
+        }
     	
     	long sum=0;
     	for(Future<Long[]> future : futures){
@@ -220,7 +238,7 @@ public class FineGrainedPerformanceTests {
     	es.shutdown();
     	return sum/(long) values.length;
     }
-
+    
     /**
      * Internal/helper functions
      */
@@ -366,28 +384,30 @@ public class FineGrainedPerformanceTests {
     	ConcurrentSkipListMap<Integer, String> javaSkipList;
     	FineGrainedSkipList<Integer> ourSkipList;
     	
-    	int multiplier;
+    	int start, end;
     	
-    	SkipListContainsTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int m){
+    	SkipListContainsTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int start, int end){
     		javaSkipList = list1;
     		ourSkipList = list2;
-    		multiplier = m;
+    		this.start = start;
+    		this.end = end;
     	}
     
 		public Long[] call() throws Exception {
-			Long[] results = new Long[values.length];
-			long start, end;
-			for(int i=0; i<values.length; i++){
+			Long[] results = new Long[end - start + 1];
+			int index = 0;
+			long mstart, mend;
+			for(int i=start; i<=end; i++){
 				if(javaSkipList!=null){
-					start = System.nanoTime();
-					javaSkipList.containsKey(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					javaSkipList.containsKey(values[i]);
+					mend = System.nanoTime();
 				}else{
-					start = System.nanoTime();
-					ourSkipList.contains(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					ourSkipList.contains(values[i]);
+					mend = System.nanoTime();
 				}
-				results[i] = end-start;
+				results[index++] = mend - mstart;
 			}
 			return results;
 		}
@@ -397,28 +417,30 @@ public class FineGrainedPerformanceTests {
     	ConcurrentSkipListMap<Integer, String> javaSkipList;
     	FineGrainedSkipList<Integer> ourSkipList;
     	
-    	int multiplier;
+    	int start, end;
     	
-    	SkipListRemoveTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int m){
+    	SkipListRemoveTimer(ConcurrentSkipListMap<Integer, String> list1, FineGrainedSkipList<Integer> list2, int start, int end){
     		javaSkipList = list1;
     		ourSkipList = list2;
-    		multiplier = m;
+    		this.start = start;
+    		this.end = end;
     	}
     
 		public Long[] call() throws Exception {
-			Long[] results = new Long[values.length];
-			long start, end;
-			for(int i=0; i<values.length; i++){
+			Long[] results = new Long[end - start + 1];
+			int index = 0;
+			long mstart, mend;
+			for(int i=start; i<=end; i++){
 				if(javaSkipList!=null){
-					start = System.nanoTime();
-					javaSkipList.remove(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					javaSkipList.remove(values[i]);
+					mend = System.nanoTime();
 				}else{
-					start = System.nanoTime();
-					ourSkipList.remove(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					ourSkipList.remove(values[i]);
+					mend = System.nanoTime();
 				}
-				results[i] = end-start;
+				results[index++] = mend-mstart;
 			}
 			return results;
 		}
