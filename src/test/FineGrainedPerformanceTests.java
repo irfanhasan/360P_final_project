@@ -27,6 +27,7 @@ public class FineGrainedPerformanceTests {
         int threads = Integer.parseInt(args[2]);
     	int maxValue = Integer.parseInt(args[3]);
 
+        long seed = new Random().nextLong();
     	FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(numOperations, threads, maxValue);
     	if(str.equals("a")){
     		System.out.println("=======================");
@@ -45,8 +46,8 @@ public class FineGrainedPerformanceTests {
             System.out.println("=======================");
     	} else if (str.equals("m")) {
     		System.out.println("=======================");
-    		//System.out.println("Our function's total throughput: " + test.testSkipListMixed(false) + " ms");
-            System.out.println("Java function's total throughput: " + test.testSkipListMixed(true) + " ms");
+    		System.out.println("Our function's total throughput: " + test.testSkipListMixed(false, seed) + " ms");
+            System.out.println("Java function's total throughput: " + test.testSkipListMixed(true, seed) + " ms");
             System.out.println("=======================");
         } else{
     		System.out.println("Invalid Input, System exiting.");
@@ -59,14 +60,14 @@ public class FineGrainedPerformanceTests {
     }
     
 
-    public long testSkipListMixed(boolean useJava) {
+    public long testSkipListMixed(boolean useJava, long seed) {
         ConcurrentSkipListMap<Integer,String> map = new ConcurrentSkipListMap<Integer, String>();
         FineGrainedSkipList<Integer> list = new FineGrainedSkipList<Integer>();
         ExecutorService es = Executors.newCachedThreadPool();
         LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
         int start = 0;
         int valuesPerThread = values.length/NUM_THREADS;
-        Random r = new Random();
+        Random r = new Random(seed);
         while (start < values.length) {
             int end = start + valuesPerThread;
             if (end > values.length - 1) {
