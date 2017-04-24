@@ -26,53 +26,61 @@ public class LockFreePerformanceTests {
    
 
     //MAIN
-    public static void main(String[] args) {	
+    public static void main(String[] args) {
+        if (args.length != 5) {
+            System.out.println("Format: java LockFreePerformanceTests <mode> <numOperations> <threads> <maxValue> <runs>");
+            System.exit(-1);
+        }	
         String str = args[0];
         int numOperations = Integer.parseInt(args[1]);
         int threads = Integer.parseInt(args[2]);
     	int maxValue = Integer.parseInt(args[3]);
-
+        int runs = Integer.parseInt(args[4]);
+    
         long seed = new Random().nextLong();
-    	LockFreePerformanceTests test = new LockFreePerformanceTests(numOperations, threads, maxValue);
-    	if(str.equals("a")){
+        for (int i = 0; i <runs; i++) {
+        	LockFreePerformanceTests test = new LockFreePerformanceTests(numOperations, threads, maxValue);
+        	if(str.equals("a")){
             String output = "=======================\n";
             output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function add on avg: " + test.testSkipListAdd(false) + " ns\n";
             output += "Java function add on avg: " + test.testSkipListAdd(true) + " ns\n";
-            output = "=======================\n\n";
+            output += "=======================\n\n";
             
-            String filename = "FineGrained_ADD.txt";
+            String filename = "LockFree_ADD.txt";
             logOutput(output, filename);
-    	}else if(str.equals("c")){
+        	}else if(str.equals("c")){
             String output = "=======================\n";
             output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function contains on avg: " + test.testSkipListContains(false) + " ns\n";
             output += "Java function contains on avg: " + test.testSkipListContains(true) + " ns\n";
-            output = "=======================\n\n";
+            output += "=======================\n\n";
             
-            String filename = "FineGrained_CONTAINS.txt";
+            String filename = "LockFree_CONTAINS.txt";
             logOutput(output, filename);
-    	}else if(str.equals("r")){
+        	}else if(str.equals("r")){
             String output = "=======================\n";
             output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function remove on avg: " + test.testSkipListRemove(false) + " ns\n";
             output += "Java function remove on avg: " + test.testSkipListRemove(true) + " ns\n";
-            output = "=======================\n\n";
+            output += "=======================\n\n";
             
-            String filename = "FineGrained_REMOVE.txt";
+            String filename = "LockFree_REMOVE.txt";
             logOutput(output, filename);
-    	} else if (str.equals("m")) {
+        	} else if (str.equals("m")) {
             String output = "=======================\n";
             output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function's mixed performance on avg: " + test.testSkipListMixed(false, seed) + " ns\n";
             output += "Java function's mixed performance on avg: " + test.testSkipListMixed(true, seed) + " ns\n";
-            output = "=======================\n\n";
+            output += "=======================\n\n";
             
-            String filename = "FineGrained_MIXED.txt";
+            String filename = "LockFree_MIXED.txt";
             logOutput(output, filename);
-        } else{
-    		System.out.println("Invalid Input, System exiting.");
-    	}
+            } else{
+        		System.out.println("Invalid Input, System exiting.");
+        	}
+        }
+
     }
     
     private static void logOutput(String output, String filename) {
