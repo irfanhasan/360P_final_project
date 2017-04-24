@@ -71,7 +71,7 @@ public class LockFreePerformanceTests {
     	}
     }
     
-    private void logOutput(String output, String filename) {
+    private static void logOutput(String output, String filename) {
         System.out.print(output);
         try {
             File yourFile = new File(filename);
@@ -260,13 +260,13 @@ public class LockFreePerformanceTests {
         }
 
         Function getFunction() {
-            int r = rand.nextInt(10);
+            int r = rand.nextInt(9);
                
-            if (r == 0 || r == 1) { //20% add
+            if (r < 3) { //33% Add
                 return Function.ADD;
-            } else if (r == 2) {  //10% remove
+            } else if (r < 6) {  //33% Remove
                 return Function.REMOVE;
-            } else {
+            } else { // 33% Contains
                 return Function.CONTAINS;
             }
         }
