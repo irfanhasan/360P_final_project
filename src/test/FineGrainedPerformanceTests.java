@@ -36,6 +36,7 @@ public class FineGrainedPerformanceTests {
     	FineGrainedPerformanceTests test = new FineGrainedPerformanceTests(numOperations, threads, maxValue);
     	if(str.equals("a")){
             String output = "=======================\n";
+            output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function add on avg: " + test.testSkipListAdd(false) + " ns\n";
             output += "Java function add on avg: " + test.testSkipListAdd(true) + " ns\n";
             output = "=======================\n\n";
@@ -44,6 +45,7 @@ public class FineGrainedPerformanceTests {
             logOutput(output, filename);
     	}else if(str.equals("c")){
             String output = "=======================\n";
+            output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function contains on avg: " + test.testSkipListContains(false) + " ns\n";
             output += "Java function contains on avg: " + test.testSkipListContains(true) + " ns\n";
             output = "=======================\n\n";
@@ -52,6 +54,7 @@ public class FineGrainedPerformanceTests {
             logOutput(output, filename);
     	}else if(str.equals("r")){
             String output = "=======================\n";
+            output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function remove on avg: " + test.testSkipListRemove(false) + " ns\n";
             output += "Java function remove on avg: " + test.testSkipListRemove(true) + " ns\n";
             output = "=======================\n\n";
@@ -60,6 +63,7 @@ public class FineGrainedPerformanceTests {
             logOutput(output, filename);
     	} else if (str.equals("m")) {
             String output = "=======================\n";
+            output += "numOperations: " + numOperations + " || threads: " + threads + " || maxValue: " + maxValue + "\n";
             output += "Our function's mixed performance on avg: " + test.testSkipListMixed(false, seed) + " ns\n";
             output += "Java function's mixed performance on avg: " + test.testSkipListMixed(true, seed) + " ns\n";
             output = "=======================\n\n";
