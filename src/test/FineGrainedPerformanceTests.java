@@ -380,7 +380,7 @@ public class FineGrainedPerformanceTests {
 			for(int i=0; i<values.length; i++){
 				if(javaSkipList!=null){
 					start = System.nanoTime();
-					javaSkipList.containsValue(i*multiplier);
+					javaSkipList.containsKey(i*multiplier);
 					end = System.nanoTime();
 				}else{
 					start = System.nanoTime();
