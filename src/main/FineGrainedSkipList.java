@@ -161,8 +161,8 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
                } finally { unlock(preds, maxLocked); }
            } else {
                return false;
-           } //end if
-       } //end while
+           }
+       }
     }
 
     public boolean contains(T val) {

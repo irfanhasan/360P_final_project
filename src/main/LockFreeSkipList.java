@@ -82,11 +82,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 while(!preds.get(layer).nexts.compareAndSet(layer, succ, newNode)) {
                 }
                 
-                //if(pred.marked.get()) { 
-                //    valid = false;
-                //}
             }
-            //if(!valid) continue;
             
             newNode.fullyLinked = true;
             break;
@@ -122,12 +118,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     while(!preds.get(i).nexts.compareAndSet(i, succ, nodeToDelete.nexts.get(i))) {
                     }
                     
-                    // I DONT THINK WE NEED THIS - GUNALAN
-                    // if(pred.marked.get()) {  //Comes after, so if valid after the CAS, we are good
-                    // 	valid = false;
-                    // }
                 }
-                // if (!valid) continue; //Is there a more efficient continue check?
                 return true;
             } else {
                 return false;
