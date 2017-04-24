@@ -9,13 +9,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
-
 import java.util.LinkedList;
 
 import java.util.Random;
 import java.util.Scanner;
 
-public class LockFreeSkipPTest {
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
+public class LockFreePerformanceTests {
     private int NUM_THREADS;
     int[] values;
    
@@ -28,33 +33,69 @@ public class LockFreeSkipPTest {
     	int maxValue = Integer.parseInt(args[3]);
 
         long seed = new Random().nextLong();
-    	LockFreeSkipPTest test = new LockFreeSkipPTest(numOperations, threads, maxValue);
+    	LockFreePerformanceTests test = new LockFreePerformanceTests(numOperations, threads, maxValue);
     	if(str.equals("a")){
-    		System.out.println("=======================");
-    		System.out.println("Our function add on avg: " + test.testSkipListAdd(false) + " ns");
-            System.out.println("Java function add on avg: " + test.testSkipListAdd(true) + " ns");
-            System.out.println("=======================");
+            String output = "=======================\n";
+            output += "Our function add on avg: " + test.testSkipListAdd(false) + " ns\n";
+            output += "Java function add on avg: " + test.testSkipListAdd(true) + " ns]\n";
+            output = "=======================\n\n";
+            System.out.print(output);
+            
+            try {
+                File yourFile = new File("LockFree_ADD.txt");
+                yourFile.createNewFile();
+                Files.write(Paths.get("LockFree_Add.txt"), output.getBytes(), StandardOpenOption.APPEND);
+            }catch (IOException e) {
+                System.exit(-1);
+            }
     	}else if(str.equals("c")){
-    		System.out.println("=======================");
-    		System.out.println("Our function contains on avg: " + test.testSkipListContains(false) + " ns");
-            System.out.println("Java function contains on avg: " + test.testSkipListContains(true) + " ns");
-            System.out.println("=======================");
+            String output = "=======================\n";
+            output += "Our function contains on avg: " + test.testSkipListContains(false) + " ns\n";
+            output += "Java function contains on avg: " + test.testSkipListContains(true) + " ns]\n";
+            output = "=======================\n\n";
+            System.out.print(output);
+            
+            try {
+                File yourFile = new File("LockFree_CONTAINS.txt");
+                yourFile.createNewFile();
+                Files.write(Paths.get("LockFree_CONTAINS.txt"), output.getBytes(), StandardOpenOption.APPEND);
+            }catch (IOException e) {
+                System.exit(-1);
+            }
     	}else if(str.equals("r")){
-    		System.out.println("=======================");
-    		System.out.println("Our function remove on avg: " + test.testSkipListRemove(false) + " ns");
-            System.out.println("Java function remove on avg: " + test.testSkipListRemove(true) + " ns");
-            System.out.println("=======================");
+            String output = "=======================\n";
+            output += "Our function remove on avg: " + test.testSkipListRemove(false) + " ns\n";
+            output += "Java function remove on avg: " + test.testSkipListRemove(true) + " ns]\n";
+            output = "=======================\n\n";
+            System.out.print(output);
+            
+            try {
+                File yourFile = new File("LockFree_REMOVE.txt");
+                yourFile.createNewFile();
+                Files.write(Paths.get("LockFree_REMOVE.txt"), output.getBytes(), StandardOpenOption.APPEND);
+            }catch (IOException e) {
+                System.exit(-1);
+            }
     	} else if (str.equals("m")) {
-    		System.out.println("=======================");
-    		System.out.println("Our function's total throughput: " + test.testSkipListMixed(false, seed) + " ms");
-            System.out.println("Java function's total throughput: " + test.testSkipListMixed(true, seed) + " ms");
-            System.out.println("=======================");
+            String output = "=======================\n";
+            output += "Our function's mixed performance on avg: " + test.testSkipListMixed(false, seed) + " ns\n";
+            output += "Java function's mixed performance on avg: " + test.testSkipListMixed(true, seed) + " ns]\n";
+            output = "=======================\n\n";
+            System.out.print(output);
+            
+            try {
+                File yourFile = new File("LockFree_MIXED.txt");
+                yourFile.createNewFile();
+                Files.write(Paths.get("LockFree_MIXED.txt"), output.getBytes(), StandardOpenOption.APPEND);
+            }catch (IOException e) {
+                System.exit(-1);
+            }
         } else{
     		System.out.println("Invalid Input, System exiting.");
     	}
     }
     
-    public LockFreeSkipPTest(int size, int threads, int maxValue) {
+    public LockFreePerformanceTests(int size, int threads, int maxValue) {
         initArrayWithValues(size, maxValue);
         NUM_THREADS = threads;
     }
