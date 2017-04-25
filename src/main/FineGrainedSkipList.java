@@ -1,3 +1,10 @@
+/*
+ * Irfan Hasan (UTEID: ih3976)
+ * Gunalan Karun (UTEID: gk5483)
+ * Peter Zhang (UTEID: yz7724)
+ * Qing Wang (UTEID: qw2328)
+ */
+
 /**
  * Implementation of a concurrent SkipList using a fine-grained approach.
  */
@@ -21,7 +28,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     private class Node {
         T value;
         Semaphore lock;
-        //ArrayList<Node> nexts;
         NodeArray nexts;
         boolean marked;
         boolean fullyLinked;
@@ -43,7 +49,12 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         }    
     }
 
-    private class NodeArray {
+    /**
+     * Wrapper class to reprsent an array of node. Need this because java generics are annoying
+     * Also, we originally used an ArrayList to hold nodes, so I made getter and setter functions in this class
+     * to minimize impact on rest of the code
+     */
+     private class NodeArray {
         private Node[] arr;
 
         NodeArray(int n) {
@@ -78,12 +89,13 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         while(true){
             int lFound = findNode(val, preds, succs);
             if(lFound!=-1){
+                //node already exists in skip list
                 Node nodeFound = succs.get(lFound);
                 if(!nodeFound.marked){
-                    while(!nodeFound.fullyLinked);
-                    return false;
+                    while(!nodeFound.fullyLinked); //wait till pre-existing node is valid 
+                    return false; //return false because technically this node already existed
                 }
-                continue;
+                continue; //pre-existing node is logically deleted, so wait till it is physically gone and then add our new node
             }
             int highestLocked = -1;
             try{
@@ -99,9 +111,10 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
                     }
                     valid = (!pred.marked) && (!succ.marked) && (pred.nexts.get(layer)==succ);
                 }
-                if(!valid) continue;
+                if(!valid) continue; //pred or successor at a layer was not valid, retry entire deletion process
                 
                 Node newNode = new Node(val, topLayer);
+                //safe to insert nodes because we have locked all predecessors
                 for(int layer=0; layer<=topLayer; layer++){
                     newNode.nexts.set(layer, succs.get(layer));
                     preds.get(layer).nexts.set(layer, newNode);
@@ -175,13 +188,6 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
     }
     
     /**
-     * prints the list
-     */
-    public void print(){
-        
-    }
-
-    /**
      * Helper (internal) functions
      */
     
@@ -215,12 +221,16 @@ public class FineGrainedSkipList<T extends Comparable<T>> implements SkipList<T>
         return node.fullyLinked && !node.marked && node.topLevel == level;
     }
 
+    /**
+     * pre-condition: all nodes in the array are locked
+     */
     private void unlock(NodeArray nodes, int maxLevel) {
         for (int i = maxLevel; i >= 0; i--) {
             nodes.get(i).lock.release();
         }
     }
 
+    
     private int randomLevel(int v){
         int lvl = (int)(Math.log(1.-Math.random())/Math.log(1.-0.5));
         return Math.min(lvl, v);
