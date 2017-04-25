@@ -71,7 +71,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             boolean valid = true;
             Node newNode = new Node(val, topLayer);
             AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(0).nexts.get(0), preds.get(0).marked.get());
-            for(int layer=0; valid && (layer<=topLayer); layer++){
+            for(int layer=0; layer<=topLayer; layer++){
                 pred = preds.get(layer);
                 succ = succs.get(layer);
                 
@@ -82,7 +82,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     valid = false;
                     break;
                 }
-                
+                preds.get(layer).nexts.set(layer, atomicNode.getReference());
             }
             
             newNode.fullyLinked = true;
@@ -112,7 +112,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 Node succ, pred = null;
                 boolean valid = true;
                 AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(0).nexts.get(0), preds.get(0).marked.get());
-                for (int i = 0; valid && i <= topLevel; i++) {
+                for (int i = 0; i <= topLevel; i++) {
                     pred = preds.get(i);
                     succ = succs.get(i);
                     
@@ -122,6 +122,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                         valid = false;
                         break;
                     }
+                    preds.get(i).nexts.set(i, atomicNode.getReference());
                     
                 }
                 if (!valid) continue;
