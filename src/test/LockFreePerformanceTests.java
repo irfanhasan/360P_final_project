@@ -312,9 +312,11 @@ public class LockFreePerformanceTests {
                         javaSkipList.put(values[i], "");
                         mend = System.nanoTime();
                     } else {
+                        //System.out.println("start add");
                 	    mstart = System.nanoTime();
                         ourSkipList.add(values[i]);
                         mend = System.nanoTime();
+                        //System.out.println("finish add");
                     }
                 } else if (action == Function.REMOVE) {
 				    if(javaSkipList!=null){
@@ -322,9 +324,11 @@ public class LockFreePerformanceTests {
 					    javaSkipList.remove(values[i]);
 					    mend = System.nanoTime();
 				    } else {
+                        //System.out.println("start remove");
 					    mstart = System.nanoTime();
 					    ourSkipList.remove(values[i]);
 					    mend = System.nanoTime();
+                        //System.out.println("finish remove");
                     }
 				} else {
 			    	if(javaSkipList!=null){
@@ -332,9 +336,11 @@ public class LockFreePerformanceTests {
 					    javaSkipList.containsKey(values[i]);
 					    mend = System.nanoTime();
 				    } else {
+                        //System.out.println("start contains");
 					    mstart = System.nanoTime();
 					    ourSkipList.contains(values[i]);
 					    mend = System.nanoTime();
+                        //System.out.println("finish removes");
 				    }
                 }
                 results[index++] = mend - mstart;

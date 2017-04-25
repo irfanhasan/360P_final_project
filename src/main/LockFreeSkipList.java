@@ -1,5 +1,6 @@
 import java.lang.reflect.Array;
 import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
 
 public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
 	   
@@ -9,31 +10,58 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
 
     private class Node {
         T value;
-        NodeArray nexts;
+        NodeArrayMarkable nexts;
         AtomicBoolean marked;
         boolean fullyLinked;
         int topLevel;
 
         Node(T val, int topLevel) {
             value = val;
-            nexts = new NodeArray(MaxHeight);
+            nexts = new NodeArrayMarkable(MaxHeight);
             marked = new AtomicBoolean(false);
             fullyLinked = false;
             this.topLevel = topLevel;
         }  
     }
 
-    private class NodeArray {
-        private Node[] arr;
-
-        NodeArray(int n) {
-            arr = (Node[]) Array.newInstance(Node.class, n);
+    private class NodeArrayMarkable {
+        //private AtomicMarkableReference<Node>[] arr;
+        private ArrayList<AtomicMarkableReference<Node>> arr;
+        
+        NodeArrayMarkable(int n) {
+            //arr = (AtomicMarkableReference<Node>[]) Array.newInstance(AtomicMarkableReference<Integer>.class, n);
+            arr = new ArrayList<AtomicMarkableReference<Node>>();
+            for (int i = 0; i < n; i++) {
+                arr.add(new AtomicMarkableReference<Node>(null, false));
+            }
         }
 
         Node get(int i) {
-            return arr[i];
+            return arr.get(i).getReference();
         }
 
+        AtomicMarkableReference<Node> getAtomic(int i) {
+            return arr.get(i);
+        }
+
+        void set(int i, Node node) {
+            arr.get(i).set(node, false);
+        }
+
+    }
+    
+    private class NodeArray {
+        
+        private Node[] arr;
+        
+        NodeArray(int n) {
+            arr = (Node[]) Array.newInstance(Node.class, n);
+        }
+        
+        Node get(int i) {
+            return arr[i];
+        }
+        
         void set(int i, Node node) {
             arr[i] = node;
         }
@@ -77,12 +105,14 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             for(; layer<=topLayer; layer++){
                 newNode.nexts.set(layer, succs.get(layer));
                 
-                AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(layer).nexts.get(layer), preds.get(layer).marked.get());
-                if (!atomicNode.compareAndSet(succs.get(layer), newNode, false, true)) {
+                //AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(layer).nexts.get(layer), preds.get(layer).marked.get());
+                
+                AtomicMarkableReference<Node> atomicNode = preds.get(layer).nexts.getAtomic(layer);
+                if (!atomicNode.compareAndSet(succs.get(layer), newNode, false, false)) {
                     valid = false;
                     break;
                 }
-                preds.get(layer).nexts.set(layer, atomicNode.getReference());
+                //preds.get(layer).nexts.set(layer, atomicNode.getReference());
             }
             if (!valid) continue;
             
@@ -104,22 +134,26 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 if(!isMarked) {
                     nodeToDelete = succs.get(found);
                     topLevel = nodeToDelete.topLevel;
+                    i = topLevel;
                     if(!nodeToDelete.marked.compareAndSet(false, true)) {
-                    	return false;
+                        return false;
                     }
                     isMarked = true;
                 }
 
                 boolean valid = true;
                 for (; i >= 0; i--) {
-                    AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
-                    if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, true)) {
+                    //AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
+                    AtomicMarkableReference<Node> atomicNode = preds.get(i).nexts.getAtomic(i);
+                    if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, false)) {
                         valid = false;
                         break;
                     }
-                    preds.get(i).nexts.set(i, atomicNode.getReference());
+                    //preds.get(i).nexts.set(i, atomicNode.getReference());
                 }
-                if (!valid) continue;
+                if (!valid) {
+                    continue;
+                }
                 return true;
             } else {
                 return false;
