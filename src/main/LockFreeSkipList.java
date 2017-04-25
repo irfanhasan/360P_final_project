@@ -25,11 +25,9 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     }
 
     private class NodeArrayMarkable {
-        //private AtomicMarkableReference<Node>[] arr;
         private ArrayList<AtomicMarkableReference<Node>> arr;
         
         NodeArrayMarkable(int n) {
-            //arr = (AtomicMarkableReference<Node>[]) Array.newInstance(AtomicMarkableReference<Integer>.class, n);
             arr = new ArrayList<AtomicMarkableReference<Node>>();
             for (int i = 0; i < n; i++) {
                 arr.add(new AtomicMarkableReference<Node>(null, false));
@@ -51,7 +49,6 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     }
     
     private class NodeArray {
-        
         private Node[] arr;
         
         NodeArray(int n) {
@@ -65,7 +62,6 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         void set(int i, Node node) {
             arr[i] = node;
         }
-
     }
 
     /**
@@ -81,6 +77,12 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     }
 
 
+	/**
+	  * Adds an element into skip list
+      *
+	  * @param val element to be added
+	  * @return boolean true or false depending on whether element was sucessfully added
+	  */
     public boolean add(T val) {
         int topLayer = randomLevel(MaxHeight);
         NodeArray preds = new NodeArray(MaxHeight);
@@ -93,8 +95,8 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             int lFound = findNode(val, preds, succs);
             if(!inProgress && lFound!=-1){
                 Node nodeFound = succs.get(lFound);
-                if(!nodeFound.marked.get()){
-                    while(!nodeFound.fullyLinked);
+                if(!nodeFound.marked.get()){ // Element already is being added by another process
+                    while(!nodeFound.fullyLinked); // wait for other thread to complete
                     return false;
                 }
                 continue;
@@ -103,24 +105,27 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
             inProgress = true;
             boolean valid = true;
             for(; layer<=topLayer; layer++){
-                newNode.nexts.set(layer, succs.get(layer));
-                
-                //AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(layer).nexts.get(layer), preds.get(layer).marked.get());
+                newNode.nexts.set(layer, succs.get(layer)); // Updated newNode.next to succ
                 
                 AtomicMarkableReference<Node> atomicNode = preds.get(layer).nexts.getAtomic(layer);
-                if (!atomicNode.compareAndSet(succs.get(layer), newNode, false, false)) {
+                if (!atomicNode.compareAndSet(succs.get(layer), newNode, false, false)) { // Atomically update pred.next to newNode
                     valid = false;
                     break;
                 }
-                //preds.get(layer).nexts.set(layer, atomicNode.getReference());
             }
-            if (!valid) continue;
+            if (!valid) continue; // retry addition from the location where you left off
             
             newNode.fullyLinked = true;
             return true;
         }
     }
     
+	/**
+	  * Deletes an element into skip list
+      *
+	  * @param val element to be Deleted
+	  * @return boolean true or false depending on whether element was sucessfully deleted
+	  */
     public boolean remove(T val) {
         Node nodeToDelete = null;
         boolean isMarked = false;
@@ -135,7 +140,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     nodeToDelete = succs.get(found);
                     topLevel = nodeToDelete.topLevel;
                     i = topLevel;
-                    if(!nodeToDelete.marked.compareAndSet(false, true)) {
+                    if(!nodeToDelete.marked.compareAndSet(false, true)) { // set marked bit for logical deletion
                         return false;
                     }
                     isMarked = true;
@@ -143,15 +148,13 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
 
                 boolean valid = true;
                 for (; i >= 0; i--) {
-                    //AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
                     AtomicMarkableReference<Node> atomicNode = preds.get(i).nexts.getAtomic(i);
-                    if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, false)) {
+                    if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, false)) { // update pred.next to newNode.next
                         valid = false;
                         break;
                     }
-                    //preds.get(i).nexts.set(i, atomicNode.getReference());
                 }
-                if (!valid) {
+                if (!valid) { // retry from where you left off
                     continue;
                 }
                 return true;
@@ -161,6 +164,12 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         }
     }
     
+	/**
+	  * Checks if element is in skip list
+      *
+	  * @param val val to check for
+	  * @return true if exists false otherwise
+	  */
     public boolean contains(T val) {
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
@@ -171,17 +180,14 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
     }
     
     /**
-     * prints the list
-     */
-    public void print(){
-        
-    }
-
-    /**
      * Helper (internal) functions
      */
     
     /**
+     * Searches for element in list
+     * @param val element to find
+     * @param pred will hold array of preds upon function return
+     * @param succs will hold array of succs upon function return
      * @return the highest layer at which value exists or -1 if value doesn't exist
      */
     private int findNode(T val, NodeArray preds, NodeArray succs) {
