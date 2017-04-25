@@ -97,7 +97,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         int topLevel = -1;
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
-        int i = 0;
+        int i = topLevel;
         while(true) {
             int found = findNode(val, preds, succs);
             if (isMarked || (found != -1 && okToDelete(succs.get(found), found))) {
@@ -111,7 +111,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 }
 
                 boolean valid = true;
-                for (; i <= topLevel; i++) {
+                for (; i >= 0; i--) {
                     AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
                     if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, true)) {
                         valid = false;
