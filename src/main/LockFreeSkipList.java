@@ -59,10 +59,11 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         NodeArray succs = new NodeArray(MaxHeight);
         
         Node newNode = new Node(val, topLayer);
-        int layer;
+        int layer = 0;
+        boolean inProgress = false;
         while(true){
             int lFound = findNode(val, preds, succs);
-            if(lFound!=-1){
+            if(!inProgress && lFound!=-1){
                 Node nodeFound = succs.get(lFound);
                 if(!nodeFound.marked.get()){
                     while(!nodeFound.fullyLinked);
@@ -71,8 +72,9 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 continue;
             }
             
+            inProgress = true;
             boolean valid = true;
-            for(layer=0; layer<=topLayer; layer++){
+            for(; layer<=topLayer; layer++){
                 newNode.nexts.set(layer, succs.get(layer));
                 
                 AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(layer).nexts.get(layer), preds.get(layer).marked.get());
@@ -95,7 +97,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         int topLevel = -1;
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
-        int i;
+        int i = 0;
         while(true) {
             int found = findNode(val, preds, succs);
             if (isMarked || (found != -1 && okToDelete(succs.get(found), found))) {
@@ -109,7 +111,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 }
 
                 boolean valid = true;
-                for (i = 0; i <= topLevel; i++) {
+                for (; i <= topLevel; i++) {
                     AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
                     if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, true)) {
                         valid = false;
