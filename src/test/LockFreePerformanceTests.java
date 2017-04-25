@@ -26,17 +26,17 @@ public class LockFreePerformanceTests {
    
 
     //MAIN
-    public static void main(String[] args) {
+    public static void main(String[] args) {	
         if (args.length != 5) {
             System.out.println("Format: java LockFreePerformanceTests <mode> <numOperations> <threads> <maxValue> <runs>");
             System.exit(-1);
-        }	
+        }
         String str = args[0];
         int numOperations = Integer.parseInt(args[1]);
         int threads = Integer.parseInt(args[2]);
     	int maxValue = Integer.parseInt(args[3]);
         int runs = Integer.parseInt(args[4]);
-    
+
         long seed = new Random().nextLong();
         for (int i = 0; i <runs; i++) {
         	LockFreePerformanceTests test = new LockFreePerformanceTests(numOperations, threads, maxValue);
@@ -80,9 +80,8 @@ public class LockFreePerformanceTests {
         		System.out.println("Invalid Input, System exiting.");
         	}
         }
-
     }
-    
+
     private static void logOutput(String output, String filename) {
         System.out.print(output);
         try {
@@ -168,7 +167,7 @@ public class LockFreePerformanceTests {
         return sum/ (long) values.length;
     }
     
-    public long testSkipListRemove(boolean useJava){
+    public long testSkipListContains(boolean useJava){
     	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
     	LockFreeSkipList<Integer> list = new LockFreeSkipList<Integer>();
     	for(int v : values){
@@ -177,13 +176,22 @@ public class LockFreePerformanceTests {
     	}
     	ExecutorService es = Executors.newCachedThreadPool();
     	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
-    	for(int i=0; i<NUM_THREADS; i++){
-    		if(useJava){
-    			futures.add(es.submit(new SkipListRemoveTimer(map, null, i+1)));
-    		}else{
-    			futures.add(es.submit(new SkipListRemoveTimer(null, list, i+1)));
-    		}
-    	}
+    	int start = 0;
+        int valuesPerThread = values.length/NUM_THREADS;
+        while (start < values.length) {
+            int end = start + valuesPerThread;
+            if (end > values.length - 1) {
+                end = values.length - 1;
+            }
+
+            if(useJava) {
+                futures.add(es.submit(new SkipListContainsTimer(map, null, start, end)));
+            } else {
+                futures.add(es.submit(new SkipListContainsTimer(null, list, start, end)));
+            }
+
+            start = end + 1;
+        }
     	
     	long sum=0;
     	for(Future<Long[]> future : futures){
@@ -195,7 +203,7 @@ public class LockFreePerformanceTests {
     	return sum/(long) values.length;
     }
     
-    public long testSkipListContains(boolean useJava){
+    public long testSkipListRemove(boolean useJava){
     	ConcurrentSkipListMap<Integer, String> map = new ConcurrentSkipListMap<Integer, String>();
     	LockFreeSkipList<Integer> list = new LockFreeSkipList<Integer>();
     	for(int v : values){
@@ -204,13 +212,22 @@ public class LockFreePerformanceTests {
     	}
     	ExecutorService es = Executors.newCachedThreadPool();
     	LinkedList<Future<Long[]>> futures = new LinkedList<Future<Long[]>>();
-    	for(int i=0; i<NUM_THREADS; i++){
-    		if(useJava){
-    			futures.add(es.submit(new SkipListContainsTimer(map, null, i+1)));
-    		}else{
-    			futures.add(es.submit(new SkipListContainsTimer(null, list, i+1)));
-    		}
-    	}
+    	int start = 0;
+        int valuesPerThread = values.length/NUM_THREADS;
+        while (start < values.length) {
+            int end = start + valuesPerThread;
+            if (end > values.length - 1) {
+                end = values.length - 1;
+            }
+
+            if(useJava) {
+                futures.add(es.submit(new SkipListRemoveTimer(map, null, start, end)));
+            } else {
+                futures.add(es.submit(new SkipListRemoveTimer(null, list, start, end)));
+            }
+
+            start = end + 1;
+        }
     	
     	long sum=0;
     	for(Future<Long[]> future : futures){
@@ -221,7 +238,7 @@ public class LockFreePerformanceTests {
     	es.shutdown();
     	return sum/(long) values.length;
     }
-
+    
     /**
      * Internal/helper functions
      */
@@ -367,28 +384,30 @@ public class LockFreePerformanceTests {
     	ConcurrentSkipListMap<Integer, String> javaSkipList;
     	LockFreeSkipList<Integer> ourSkipList;
     	
-    	int multiplier;
+    	int start, end;
     	
-    	SkipListContainsTimer(ConcurrentSkipListMap<Integer, String> list1, LockFreeSkipList<Integer> list2, int m){
+    	SkipListContainsTimer(ConcurrentSkipListMap<Integer, String> list1, LockFreeSkipList<Integer> list2, int start, int end){
     		javaSkipList = list1;
     		ourSkipList = list2;
-    		multiplier = m;
+    		this.start = start;
+    		this.end = end;
     	}
     
 		public Long[] call() throws Exception {
-			Long[] results = new Long[values.length];
-			long start, end;
-			for(int i=0; i<values.length; i++){
+			Long[] results = new Long[end - start + 1];
+			int index = 0;
+			long mstart, mend;
+			for(int i=start; i<=end; i++){
 				if(javaSkipList!=null){
-					start = System.nanoTime();
-					javaSkipList.containsKey(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					javaSkipList.containsKey(values[i]);
+					mend = System.nanoTime();
 				}else{
-					start = System.nanoTime();
-					ourSkipList.contains(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					ourSkipList.contains(values[i]);
+					mend = System.nanoTime();
 				}
-				results[i] = end-start;
+				results[index++] = mend - mstart;
 			}
 			return results;
 		}
@@ -398,28 +417,30 @@ public class LockFreePerformanceTests {
     	ConcurrentSkipListMap<Integer, String> javaSkipList;
     	LockFreeSkipList<Integer> ourSkipList;
     	
-    	int multiplier;
+    	int start, end;
     	
-    	SkipListRemoveTimer(ConcurrentSkipListMap<Integer, String> list1, LockFreeSkipList<Integer> list2, int m){
+    	SkipListRemoveTimer(ConcurrentSkipListMap<Integer, String> list1, LockFreeSkipList<Integer> list2, int start, int end){
     		javaSkipList = list1;
     		ourSkipList = list2;
-    		multiplier = m;
+    		this.start = start;
+    		this.end = end;
     	}
     
 		public Long[] call() throws Exception {
-			Long[] results = new Long[values.length];
-			long start, end;
-			for(int i=0; i<values.length; i++){
+			Long[] results = new Long[end - start + 1];
+			int index = 0;
+			long mstart, mend;
+			for(int i=start; i<=end; i++){
 				if(javaSkipList!=null){
-					start = System.nanoTime();
-					javaSkipList.remove(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					javaSkipList.remove(values[i]);
+					mend = System.nanoTime();
 				}else{
-					start = System.nanoTime();
-					ourSkipList.remove(i*multiplier);
-					end = System.nanoTime();
+					mstart = System.nanoTime();
+					ourSkipList.remove(values[i]);
+					mend = System.nanoTime();
 				}
-				results[i] = end-start;
+				results[index++] = mend-mstart;
 			}
 			return results;
 		}
