@@ -5,7 +5,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
 	   
     private static final int MaxHeight = 32;
     
-   Node head; 
+    Node head; 
 
     private class Node {
         T value;
@@ -37,7 +37,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         void set(int i, Node node) {
             arr[i] = node;
         }
-        
+
     }
 
     /**
@@ -52,10 +52,14 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         }
     }
 
+
     public boolean add(T val) {
         int topLayer = randomLevel(MaxHeight);
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
+        
+        Node newNode = new Node(val, topLayer);
+        int layer;
         while(true){
             int lFound = findNode(val, preds, succs);
             if(lFound!=-1){
@@ -67,28 +71,22 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                 continue;
             }
             
-            Node pred, succ, prevPred = null;
             boolean valid = true;
-            Node newNode = new Node(val, topLayer);
-            AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(0).nexts.get(0), preds.get(0).marked.get());
-            for(int layer=0; layer<=topLayer; layer++){
-                pred = preds.get(layer);
-                succ = succs.get(layer);
+            for(layer=0; layer<=topLayer; layer++){
+                newNode.nexts.set(layer, succs.get(layer));
                 
-                atomicNode.set(pred.nexts.get(layer), pred.marked.get());
-                
-                newNode.nexts.set(layer, succ);
-                if (!atomicNode.compareAndSet(succ, newNode, false, true)){
+                AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(layer).nexts.get(layer), preds.get(layer).marked.get());
+                if (!atomicNode.compareAndSet(succs.get(layer), newNode, false, true)) {
                     valid = false;
                     break;
                 }
                 preds.get(layer).nexts.set(layer, atomicNode.getReference());
             }
+            if (!valid) continue;
             
             newNode.fullyLinked = true;
-            break;
+            return true;
         }
-        return true;
     }
     
     public boolean remove(T val) {
@@ -97,6 +95,7 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
         int topLevel = -1;
         NodeArray preds = new NodeArray(MaxHeight);
         NodeArray succs = new NodeArray(MaxHeight);
+        int i;
         while(true) {
             int found = findNode(val, preds, succs);
             if (isMarked || (found != -1 && okToDelete(succs.get(found), found))) {
@@ -109,21 +108,14 @@ public class LockFreeSkipList<T extends Comparable<T>> implements SkipList<T> {
                     isMarked = true;
                 }
 
-                Node succ, pred = null;
                 boolean valid = true;
-                AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(0).nexts.get(0), preds.get(0).marked.get());
-                for (int i = 0; i <= topLevel; i++) {
-                    pred = preds.get(i);
-                    succ = succs.get(i);
-                    
-                    atomicNode.set(pred.nexts.get(i), pred.marked.get());
-
-                    if (!atomicNode.compareAndSet(succ, nodeToDelete.nexts.get(i), false, true)){
+                for (i = 0; i <= topLevel; i++) {
+                    AtomicMarkableReference<Node> atomicNode = new AtomicMarkableReference<Node>(preds.get(i).nexts.get(i), preds.get(i).marked.get());
+                    if(!atomicNode.compareAndSet(succs.get(i), nodeToDelete.nexts.get(i), false, true)) {
                         valid = false;
                         break;
                     }
                     preds.get(i).nexts.set(i, atomicNode.getReference());
-                    
                 }
                 if (!valid) continue;
                 return true;
